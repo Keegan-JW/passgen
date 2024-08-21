@@ -4,31 +4,34 @@ A simple password generator in Rust
 ## Installation
 
 ```bash
-  git clone https://github.com/Keegan-JW/passgen
-  Move into $PATH
+git clone https://github.com/Keegan-JW/passgen
+cd passgen
+cargo build --release
+# Move the binary into $PATH
 ```
     
 ## Usage
 
 ```text
- USAGE:
-    passgen [FLAGS] [OPTIONS] 
+Generate random passwords
 
-FLAGS:
-    -v, --copy-password
-    -h, --help                
-    -d, --include-digits
-    -c, --include-lowercase
-    -s, --include-special
-    -u, --include-uppercase
-    -V, --version              
+Usage: passgen [OPTIONS]
 
-OPTIONS:
-    -l, --length <length>     [default: 20]
+Options:
+  -l, --length <LENGTH>    The length of the password [default: 20]
+  -u, --include-uppercase
+  -c, --include-lowercase
+  -d, --include-digits
+  -s, --include-special
+  -v, --copy-password
+  -h, --help               Print help
+  -V, --version            Print version
 ```
 
 ## Example
 
 ```bash
 passgen -l 25 -u -c -d -s
+# Or
+passgen -ucdsl 25
 ```

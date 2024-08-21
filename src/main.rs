@@ -1,51 +1,55 @@
-use rand::seq::SliceRandom;
-use structopt::StructOpt;
+use clap::Parser;
 use copypasta::{ClipboardContext, ClipboardProvider};
+use rand::seq::SliceRandom;
+use std::process::exit;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "passgen", about = "Generate random passwords")]
-struct Opt {
-    #[structopt(short = "l", long, default_value = "20")]
+/// Generate random passwords
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// The length of the password
+    #[arg(short, long, default_value_t = 20)]
     length: usize,
 
-    #[structopt(short = "u", long)]
+    #[arg(short = 'u', long)]
     include_uppercase: bool,
 
-    #[structopt(short = "c", long)]
+    #[arg(short = 'c', long)]
     include_lowercase: bool,
 
-    #[structopt(short = "d", long)]
+    #[arg(short = 'd', long)]
     include_digits: bool,
 
-    #[structopt(short = "s", long)]
+    #[arg(short = 's', long)]
     include_special: bool,
-    
-    #[structopt(short = "v", long)]
+
+    #[arg(short = 'v', long)]
     copy_password: bool,
 }
 
-fn generate_password(opt: &Opt) -> String {
+fn generate_password(args: &Args) -> String {
     let mut password_chars: Vec<char> = Vec::new();
 
-    if opt.include_uppercase {
+    if args.include_uppercase {
         password_chars.extend("ABCDEFGHIJKLMNOPQRSTUVWXYZ".chars());
     }
-    if opt.include_lowercase {
+    if args.include_lowercase {
         password_chars.extend("abcdefghijklmnopqrstuvwxyz".chars());
     }
-    if opt.include_digits {
+    if args.include_digits {
         password_chars.extend("0123456789".chars());
     }
-    if opt.include_special {
+    if args.include_special {
         password_chars.extend("!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?".chars());
     }
 
     if password_chars.is_empty() {
-        println!("You need to have at least one character option");
+        eprintln!("You need to have at least one character option");
+        exit(1); // Exit program here to avoid carrying on with an empty string
     }
 
     let mut rng = rand::thread_rng();
-    let password: String = (0..opt.length)
+    let password: String = (0..args.length)
         .map(|_| *password_chars.choose(&mut rng).unwrap())
         .collect();
 
@@ -53,14 +57,27 @@ fn generate_password(opt: &Opt) -> String {
 }
 
 fn copy_password(password: &String) {
-    let mut ctx = ClipboardContext::new().unwrap();
-    ctx.set_contents(password.to_owned()).unwrap();
-    let _content = ctx.get_contents().unwrap();
+    let mut ctx = match ClipboardContext::new() {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("Unable to get access to the clipboard.");
+            return;
+        }
+    };
+
+    if ctx.set_contents(password.to_owned()).is_err() {
+        eprintln!("Unable to set the contents of the clipboard.");
+        return;
+    }
 }
 
 fn main() {
-    let opt = Opt::from_args();
-    let password = generate_password(&opt);
-    if opt.copy_password { copy_password(&password); }
+    let args = Args::parse();
+    let password = generate_password(&args);
+
+    if args.copy_password {
+        copy_password(&password);
+    }
+
     println!("{}", password);
 }
