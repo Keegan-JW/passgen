@@ -1,7 +1,7 @@
+use anyhow::{self, Result};
 use clap::Parser;
 use copypasta::{ClipboardContext, ClipboardProvider};
 use rand::seq::SliceRandom;
-use std::process::exit;
 
 /// Generate random passwords
 #[derive(Parser, Debug)]
@@ -27,7 +27,7 @@ struct Args {
     copy_password: bool,
 }
 
-fn generate_password(args: &Args) -> String {
+fn generate_password(args: &Args) -> Result<String> {
     let mut password_chars: Vec<char> = Vec::new();
 
     if args.include_uppercase {
@@ -44,8 +44,7 @@ fn generate_password(args: &Args) -> String {
     }
 
     if password_chars.is_empty() {
-        eprintln!("You need to have at least one character option");
-        exit(1); // Exit program here to avoid carrying on with an empty string
+        anyhow::bail!("You need to have at least one character option");
     }
 
     let mut rng = rand::thread_rng();
@@ -53,31 +52,33 @@ fn generate_password(args: &Args) -> String {
         .map(|_| *password_chars.choose(&mut rng).unwrap())
         .collect();
 
-    password
+    Ok(password)
 }
 
-fn copy_password(password: &String) {
+fn copy_password(password: &String) -> Result<()> {
     let mut ctx = match ClipboardContext::new() {
         Ok(c) => c,
         Err(_) => {
-            eprintln!("Unable to get access to the clipboard.");
-            return;
+            anyhow::bail!("Unable to get access to the clipboard.");
         }
     };
 
     if ctx.set_contents(password.to_owned()).is_err() {
-        eprintln!("Unable to set the contents of the clipboard.");
-        return;
+        anyhow::bail!("Unable to set the contents of the clipboard.");
     }
+
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Args::parse();
-    let password = generate_password(&args);
+    let password = generate_password(&args)?;
 
     if args.copy_password {
-        copy_password(&password);
+        copy_password(&password)?;
     }
 
     println!("{}", password);
+
+    Ok(())
 }
